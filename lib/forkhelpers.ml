@@ -62,13 +62,41 @@ let getpid (sock, pid) = pid
 
 type 'a result = Success of string * 'a | Failure of string * exn
 
+(** [fd_blocks_fold block_size f start fd] folds [f] over blocks (strings)
+    from the fd [fd] with initial value [start] *)
+let fd_blocks_fold block_size f start fd = 
+	let block = String.create block_size in
+	let rec fold acc = 
+		let n = Unix.read fd block 0 block_size in
+		(* Consider making the interface explicitly use Substrings *)
+		let s = if n = block_size then block else String.sub block 0 n in
+		if n = 0 then acc else fold (f acc s) in
+	fold start
+
+(** open a file, and make sure the close is always done *)
+let with_file file mode perms f =
+	let fd = Unix.openfile file mode perms in
+	let r =
+		try f fd
+		with exn -> Unix.close fd; raise exn
+		in
+	Unix.close fd;
+	r
+
+let buffer_of_fd fd = 
+	fd_blocks_fold 1024 (fun b s -> Buffer.add_string b s; b) (Buffer.create 1024) fd
+
+let buffer_of_file file_path = with_file file_path [ Unix.O_RDONLY ] 0 buffer_of_fd
+
+let string_of_file file_path = Buffer.contents (buffer_of_file file_path)
+
 (** Creates a temporary file and opens it for logging. The fd is passed to the function
     'f'. The logfile is guaranteed to be closed afterwards, and unlinked if either the delete flag is set or the call fails. If the
     function 'f' throws an error then the log file contents are read in *)
 let with_logfile_fd ?(delete = true) prefix f = 
   let logfile = Filename.temp_file prefix ".log" in
   let read_logfile () = 
-    let contents = Unixext.string_of_file logfile in
+    let contents = string_of_file logfile in
     Unix.unlink logfile;
     contents in
 
@@ -169,7 +197,7 @@ let execute_command_get_output_inner ?env ?stdin ?(syslog_stdout=NoSyslogging) c
 		match with_logfile_fd "execute_command_get_out" (fun out_fd ->
 			with_logfile_fd "execute_command_get_err" (fun err_fd ->
 				let (sock,pid) = safe_close_and_exec ?env (Opt.map (fun (_,fd,_) -> fd) stdinandpipes) (Some out_fd) (Some err_fd) [] ~syslog_stdout cmd args in
-				Opt.map (fun (str,_,wr) -> Unixext.really_write_string wr str) stdinandpipes;
+				Opt.map (fun (str,_,wr) -> Fecomms.really_write_string wr str) stdinandpipes;
 				match Fecomms.read_raw_rpc sock with
 					| Fe.Finished x -> Unix.close sock; x
 					| _ -> Unix.close sock; failwith "Communications error"	    

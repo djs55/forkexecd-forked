@@ -199,14 +199,19 @@ let safe_close_and_exec ?env stdin stdout stderr (fds: (string * Unix.file_descr
 
 
 let execute_command_get_output_inner ?env ?stdin ?(syslog_stdout=NoSyslogging) cmd args =
-	let stdinandpipes = Opt.map (fun str -> 
+	let stdinandpipes = match stdin with
+    | Some str ->
 		let (x,y) = Unix.pipe () in
-		(str,x,y)) stdin in
-	Pervasiveext.finally (fun () -> 
+		Some (str,x,y)
+    | None -> None in
+	finally (fun () -> 
 		match with_logfile_fd "execute_command_get_out" (fun out_fd ->
 			with_logfile_fd "execute_command_get_err" (fun err_fd ->
-				let (sock,pid) = safe_close_and_exec ?env (Opt.map (fun (_,fd,_) -> fd) stdinandpipes) (Some out_fd) (Some err_fd) [] ~syslog_stdout cmd args in
-				Opt.map (fun (str,_,wr) -> Fecomms.really_write_string wr str) stdinandpipes;
+				let (sock,pid) = safe_close_and_exec ?env (match stdinandpipes with Some (_, fd, _) -> Some fd | None -> None) (Some out_fd) (Some err_fd) [] ~syslog_stdout cmd args in
+			    begin match stdinandpipes with
+                | Some (str, _, wr) -> Fecomms.really_write_string wr str
+                | None -> ()
+                end;
 				match Fecomms.read_raw_rpc sock with
 					| Fe.Finished x -> Unix.close sock; x
 					| _ -> Unix.close sock; failwith "Communications error"	    
@@ -222,7 +227,7 @@ let execute_command_get_output_inner ?env ?stdin ?(syslog_stdout=NoSyslogging) c
 			| Success(_,Failure(_,exn))
 			| Failure(_, exn) ->
 				raise exn)
-		(fun () -> Opt.iter (fun (_,x,y) -> Unix.close x; Unix.close y) stdinandpipes)
+		(fun () -> match stdinandpipes with Some (_, x, y) -> Unix.close x; Unix.close y | None -> ())
 
 let execute_command_get_output ?env ?(syslog_stdout=NoSyslogging) cmd args =
 	execute_command_get_output_inner ?env ?stdin:None ~syslog_stdout cmd args

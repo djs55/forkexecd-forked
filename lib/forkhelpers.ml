@@ -119,7 +119,14 @@ type syslog_stdout_t =
   | Syslog_DefaultKey
   | Syslog_WithKey of string
 
-
+let finally f g =
+  try
+    let x = f () in
+    g ();
+    x
+  with e ->
+    g ();
+    raise e
 
 (** Safe function which forks a command, closing all fds except a whitelist and
     having performed some fd operations in the child *)

@@ -41,3 +41,4 @@
 <src/*.ml{,i}>: pkg_rpclib.syntax
 <src/fe_main.{native,byte,nobj.o}>: custom
 # OASIS_STOP
+<lib/fe.ml>: syntax_camlp4o, pkg_rpclib.syntax

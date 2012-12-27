@@ -23,11 +23,11 @@
 
 let default_path = [ "/sbin"; "/usr/sbin"; "/bin"; "/usr/bin" ]
 
-open Pervasiveext
-
 type pidty = (Unix.file_descr * int) (* The forking executioner has been used, therefore we need to tell *it* to waitpid *)
 
-let string_of_pidty (fd, pid) = Printf.sprintf "(FEFork (%d,%d))" (Unixext.int_of_file_descr fd) pid
+let int_of_file_descr (x: Unix.file_descr) : int = Obj.magic x
+
+let string_of_pidty (fd, pid) = Printf.sprintf "(FEFork (%d,%d))" (int_of_file_descr fd) pid
 
 exception Subprocess_failed of int
 exception Subprocess_killed of int

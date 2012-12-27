@@ -1,0 +1,43 @@
+# OASIS_START
+# DO NOT EDIT (digest: 0e841ede74e3fae44e0ed3030b4198b4)
+# Ignore VCS directories, you can use the same kind of rule outside 
+# OASIS_START/STOP if you want to exclude directories that contains 
+# useless stuff for the build process
+<**/.svn>: -traverse
+<**/.svn>: not_hygienic
+".bzr": -traverse
+".bzr": not_hygienic
+".hg": -traverse
+".hg": not_hygienic
+".git": -traverse
+".git": not_hygienic
+"_darcs": -traverse
+"_darcs": not_hygienic
+# Library forkexec
+"lib/forkexec.cmxs": use_forkexec
+<lib/forkexec.{cma,cmxa}>: use_libforkexec_stubs
+<lib/*.ml{,i}>: pkg_uuidm
+<lib/*.ml{,i}>: pkg_syslog
+<lib/*.ml{,i}>: pkg_threads
+<lib/*.ml{,i}>: pkg_rpclib
+<lib/*.ml{,i}>: pkg_rpclib.syntax
+"lib/fd_send_recv_stubs.c": pkg_uuidm
+"lib/fd_send_recv_stubs.c": pkg_syslog
+"lib/fd_send_recv_stubs.c": pkg_threads
+"lib/fd_send_recv_stubs.c": pkg_rpclib
+"lib/fd_send_recv_stubs.c": pkg_rpclib.syntax
+# Executable forexecd
+<src/fe_main.{native,byte,nobj.o}>: use_forkexec
+<src/fe_main.{native,byte,nobj.o}>: pkg_uuidm
+<src/fe_main.{native,byte,nobj.o}>: pkg_syslog
+<src/fe_main.{native,byte,nobj.o}>: pkg_threads
+<src/fe_main.{native,byte,nobj.o}>: pkg_rpclib
+<src/fe_main.{native,byte,nobj.o}>: pkg_rpclib.syntax
+<src/*.ml{,i}>: use_forkexec
+<src/*.ml{,i}>: pkg_uuidm
+<src/*.ml{,i}>: pkg_syslog
+<src/*.ml{,i}>: pkg_threads
+<src/*.ml{,i}>: pkg_rpclib
+<src/*.ml{,i}>: pkg_rpclib.syntax
+<src/fe_main.{native,byte,nobj.o}>: custom
+# OASIS_STOP

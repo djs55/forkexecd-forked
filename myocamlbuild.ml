@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 8ed08b5293bd5cc27f3512bdae1b8ca5) *)
+(* DO NOT EDIT (digest: 463e876a4a39263eafe787bdd9104c2f) *)
 module OASISGettext = struct
 # 21 "/home/djs/oasis/src/oasis/OASISGettext.ml"
 
@@ -561,7 +561,7 @@ let package_default =
      MyOCamlbuildBase.lib_ocaml = [("forkexec", ["lib"])];
      lib_c = [("forkexec", "lib", [])];
      flags = [];
-     includes = [("test", ["lib"]); ("src", ["lib"])];
+     includes = [("test", ["lib"]); ("src", ["lib"]); ("cli", ["lib"])];
      }
   ;;
 

@@ -34,3 +34,12 @@ Executable fe_test
   Custom:             true
   Install:            false
   BuildDepends:       forkexec, uuidm, syslog
+
+
+Executable fe_cli
+  CompiledObject:     best
+  Path:               cli
+  MainIs:             fe_cli.ml
+  Custom:             true
+  Install:            false
+  BuildDepends:       forkexec, uuidm, syslog

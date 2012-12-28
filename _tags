@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 45ee26c65ec59bdd71b3abb0fab8612e)
+# DO NOT EDIT (digest: 25531dee12a96c5244505a3345613524)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -54,5 +54,19 @@
 <test/*.ml{,i}>: pkg_rpclib
 <test/*.ml{,i}>: pkg_rpclib.syntax
 <test/fe_test.{native,byte,nobj.o}>: custom
+# Executable fe_cli
+<cli/fe_cli.{native,byte,nobj.o}>: use_forkexec
+<cli/fe_cli.{native,byte,nobj.o}>: pkg_uuidm
+<cli/fe_cli.{native,byte,nobj.o}>: pkg_syslog
+<cli/fe_cli.{native,byte,nobj.o}>: pkg_threads
+<cli/fe_cli.{native,byte,nobj.o}>: pkg_rpclib
+<cli/fe_cli.{native,byte,nobj.o}>: pkg_rpclib.syntax
+<cli/*.ml{,i}>: use_forkexec
+<cli/*.ml{,i}>: pkg_uuidm
+<cli/*.ml{,i}>: pkg_syslog
+<cli/*.ml{,i}>: pkg_threads
+<cli/*.ml{,i}>: pkg_rpclib
+<cli/*.ml{,i}>: pkg_rpclib.syntax
+<cli/fe_cli.{native,byte,nobj.o}>: custom
 # OASIS_STOP
 <lib/fe.ml>: syntax_camlp4o, pkg_rpclib.syntax

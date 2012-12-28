@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 25531dee12a96c5244505a3345613524)
+# DO NOT EDIT (digest: dc638bab75157e1fbbfc1b8408fa23f2)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -15,17 +15,12 @@
 "_darcs": not_hygienic
 # Library forkexec
 "lib/forkexec.cmxs": use_forkexec
-<lib/forkexec.{cma,cmxa}>: use_libforkexec_stubs
 <lib/*.ml{,i}>: pkg_uuidm
 <lib/*.ml{,i}>: pkg_syslog
 <lib/*.ml{,i}>: pkg_threads
 <lib/*.ml{,i}>: pkg_rpclib
 <lib/*.ml{,i}>: pkg_rpclib.syntax
-"lib/fd_send_recv_stubs.c": pkg_uuidm
-"lib/fd_send_recv_stubs.c": pkg_syslog
-"lib/fd_send_recv_stubs.c": pkg_threads
-"lib/fd_send_recv_stubs.c": pkg_rpclib
-"lib/fd_send_recv_stubs.c": pkg_rpclib.syntax
+<lib/*.ml{,i}>: pkg_fd-send-recv
 # Executable forexecd
 <src/fe_main.{native,byte,nobj.o}>: use_forkexec
 <src/fe_main.{native,byte,nobj.o}>: pkg_uuidm
@@ -33,12 +28,14 @@
 <src/fe_main.{native,byte,nobj.o}>: pkg_threads
 <src/fe_main.{native,byte,nobj.o}>: pkg_rpclib
 <src/fe_main.{native,byte,nobj.o}>: pkg_rpclib.syntax
+<src/fe_main.{native,byte,nobj.o}>: pkg_fd-send-recv
 <src/*.ml{,i}>: use_forkexec
 <src/*.ml{,i}>: pkg_uuidm
 <src/*.ml{,i}>: pkg_syslog
 <src/*.ml{,i}>: pkg_threads
 <src/*.ml{,i}>: pkg_rpclib
 <src/*.ml{,i}>: pkg_rpclib.syntax
+<src/*.ml{,i}>: pkg_fd-send-recv
 <src/fe_main.{native,byte,nobj.o}>: custom
 # Executable fe_test
 <test/fe_test.{native,byte,nobj.o}>: use_forkexec
@@ -47,12 +44,14 @@
 <test/fe_test.{native,byte,nobj.o}>: pkg_threads
 <test/fe_test.{native,byte,nobj.o}>: pkg_rpclib
 <test/fe_test.{native,byte,nobj.o}>: pkg_rpclib.syntax
+<test/fe_test.{native,byte,nobj.o}>: pkg_fd-send-recv
 <test/*.ml{,i}>: use_forkexec
 <test/*.ml{,i}>: pkg_uuidm
 <test/*.ml{,i}>: pkg_syslog
 <test/*.ml{,i}>: pkg_threads
 <test/*.ml{,i}>: pkg_rpclib
 <test/*.ml{,i}>: pkg_rpclib.syntax
+<test/*.ml{,i}>: pkg_fd-send-recv
 <test/fe_test.{native,byte,nobj.o}>: custom
 # Executable fe_cli
 <cli/fe_cli.{native,byte,nobj.o}>: use_forkexec
@@ -61,12 +60,14 @@
 <cli/fe_cli.{native,byte,nobj.o}>: pkg_threads
 <cli/fe_cli.{native,byte,nobj.o}>: pkg_rpclib
 <cli/fe_cli.{native,byte,nobj.o}>: pkg_rpclib.syntax
+<cli/fe_cli.{native,byte,nobj.o}>: pkg_fd-send-recv
 <cli/*.ml{,i}>: use_forkexec
 <cli/*.ml{,i}>: pkg_uuidm
 <cli/*.ml{,i}>: pkg_syslog
 <cli/*.ml{,i}>: pkg_threads
 <cli/*.ml{,i}>: pkg_rpclib
 <cli/*.ml{,i}>: pkg_rpclib.syntax
+<cli/*.ml{,i}>: pkg_fd-send-recv
 <cli/fe_cli.{native,byte,nobj.o}>: custom
 # OASIS_STOP
 <lib/fe.ml>: syntax_camlp4o, pkg_rpclib.syntax

@@ -25,4 +25,4 @@ Executable forexecd
   MainIs:             fe_main.ml
   Custom:             true
   Install:            false
-  BuildDepends:       forkexec, uuidm
+  BuildDepends:       forkexec, uuidm, syslog

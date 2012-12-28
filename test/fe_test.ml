@@ -1,6 +1,8 @@
 (* stdin stdout stderr (name, fd) cmd args *)
 
-let mkints n = Range.to_list (Range.make 0 n)
+let mkints n =
+  let rec loop a b = if a = b then [] else a :: (loop (a + 1) b) in
+  loop 0 n
 
 (* All combinations of stdin, stdout, stderr
    0 - 5 named fds on the commandline
@@ -48,7 +50,7 @@ let one x =
   (*Printf.fprintf stderr "named_fds = %d\n" x.named_fds;
   Printf.fprintf stderr "extra = %d\n" x.extra;*)
   let fd = Unix.stdin in
-  let make_names n = List.map (fun _ -> Uuid.to_string (Uuid.make_uuid ())) (mkints n) in
+  let make_names n = List.map (fun _ -> Uuidm.to_string (Uuidm.create `V4)) (mkints n) in
   let names = make_names x.named_fds in
   let cmdline_names = irrelevant_strings @ names @ names in
   let number_of_extra = x.extra in
@@ -80,7 +82,7 @@ let master () =
 	let frac = float_of_int (!i) /. (float_of_int (List.length combinations)) in
 	let hashes = int_of_float (frac *. 70.) in
 	let percent = int_of_float (frac *. 100.) in
-	  Printf.printf "\r%5d %3d %s" !i (int_of_float (frac *. 100.)) (String.concat "" (List.map (fun _ -> "#") (Range.to_list (Range.make 0 hashes))));
+	  Printf.printf "\r%5d %3d %s" !i (int_of_float (frac *. 100.)) (String.concat "" (List.map (fun _ -> "#") (mkints hashes)));
 	  flush stdout;
 	f x;
   in

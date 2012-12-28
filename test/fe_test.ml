@@ -90,7 +90,11 @@ let master () =
   Printf.printf "\nCompleted %d tests\n" (List.length combinations)
 
 let fail x =
-  Unixext.write_string_to_file "/tmp/fe-test.log" x;
+  let f = Unix.openfile "/tmp/fe-test.log" [ Unix.O_CREAT; Unix.O_WRONLY ] 0o0644 in
+  let n = Unix.write f x 0 (String.length x) in
+  if n <> (String.length x)
+  then Printf.fprintf stderr "fail: short write to fe-test.log\n%!";
+  Unix.close f;
   Printf.fprintf stderr "%s\n" x;
   assert false
 

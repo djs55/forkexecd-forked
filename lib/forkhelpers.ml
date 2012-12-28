@@ -25,9 +25,7 @@ let default_path = [ "/sbin"; "/usr/sbin"; "/bin"; "/usr/bin" ]
 
 type pidty = (Unix.file_descr * int) (* The forking executioner has been used, therefore we need to tell *it* to waitpid *)
 
-let int_of_file_descr (x: Unix.file_descr) : int = Obj.magic x
-
-let string_of_pidty (fd, pid) = Printf.sprintf "(FEFork (%d,%d))" (int_of_file_descr fd) pid
+let string_of_pidty (fd, pid) = Printf.sprintf "(FEFork (%d,%d))" (Fecomms.int_of_file_descr fd) pid
 
 exception Subprocess_failed of int
 exception Subprocess_killed of int
@@ -119,15 +117,6 @@ type syslog_stdout_t =
   | Syslog_DefaultKey
   | Syslog_WithKey of string
 
-let finally f g =
-  try
-    let x = f () in
-    g ();
-    x
-  with e ->
-    g ();
-    raise e
-
 (** Safe function which forks a command, closing all fds except a whitelist and
     having performed some fd operations in the child *)
 let safe_close_and_exec ?env stdin stdout stderr (fds: (string * Unix.file_descr) list) ?(syslog_stdout=NoSyslogging)
@@ -144,7 +133,7 @@ let safe_close_and_exec ?env stdin stdout stderr (fds: (string * Unix.file_descr
   let remove_fd_from_close_list fd = fds_to_close := List.filter (fun fd' -> fd' <> fd) !fds_to_close in
   let close_fds () = List.iter (fun fd -> Unix.close fd) !fds_to_close in
 
-  finally (fun () -> 
+  Fecomms.finally (fun () -> 
 
     let maybe_add_id_to_fd_map id_to_fd_map (uuid,fd,v) =
       match v with 
@@ -204,7 +193,7 @@ let execute_command_get_output_inner ?env ?stdin ?(syslog_stdout=NoSyslogging) c
 		let (x,y) = Unix.pipe () in
 		Some (str,x,y)
     | None -> None in
-	finally (fun () -> 
+	Fecomms.finally (fun () -> 
 		match with_logfile_fd "execute_command_get_out" (fun out_fd ->
 			with_logfile_fd "execute_command_get_err" (fun err_fd ->
 				let (sock,pid) = safe_close_and_exec ?env (match stdinandpipes with Some (_, fd, _) -> Some fd | None -> None) (Some out_fd) (Some err_fd) [] ~syslog_stdout cmd args in

@@ -1,6 +1,3 @@
-open Stringext
-open Pervasiveext
-
 let debug (fmt : ('a, unit, string, unit) format4) = (Printf.kprintf (fun s -> Printf.fprintf stderr "%s\n" s) fmt)
 
 exception Cancelled
@@ -20,12 +17,75 @@ type state_t = {
   finished : bool;
 }
 
+exception Break
+
+let lines_fold f start input =
+        let accumulator = ref start in
+        let running = ref true in
+        while !running do
+                let line =
+                        try Some (input_line input)
+                        with End_of_file -> None
+                in
+                match line with
+                | Some line ->
+                        begin
+                                try accumulator := (f !accumulator line)
+                                with Break -> running := false
+                        end
+                | None ->
+                                running := false
+        done;
+        !accumulator
+
+(** open a file, and make sure the close is always done *)
+let with_input_channel file f =
+        let input = open_in file in
+        Fecomms.finally
+                (fun () -> f input)
+                (fun () -> close_in input)
+
+let file_lines_fold f start file_path = with_input_channel file_path (lines_fold f start)
+
+let file_lines_iter f = file_lines_fold (fun () line -> ignore(f line)) ()
+
+let string_of_signal x =
+        let table = [
+                Sys.sigabrt, "SIGABRT";
+                Sys.sigalrm, "SIGALRM";
+                Sys.sigfpe, "SIGFPE";
+                Sys.sighup, "SIGHUP";
+                Sys.sigill, "SIGILL";
+                Sys.sigint, "SIGINT";
+                Sys.sigkill, "SIGKILL";
+                Sys.sigpipe, "SIGPIPE";
+                Sys.sigquit, "SIGQUIT";
+                Sys.sigsegv, "SIGSEGV";
+                Sys.sigterm, "SIGTERM";
+                Sys.sigusr1, "SIGUSR1";
+                Sys.sigusr2, "SIGUSR2";
+                Sys.sigchld, "SIGCHLD";
+                Sys.sigcont, "SIGCONT";
+                Sys.sigstop, "SIGSTOP";
+                Sys.sigttin, "SIGTTIN";
+                Sys.sigttou, "SIGTTOU";
+                Sys.sigvtalrm, "SIGVTALRM";
+                Sys.sigprof, "SIGPROF";
+        ] in
+        if List.mem_assoc x table
+        then List.assoc x table
+        else (Printf.sprintf "(ocaml signal %d with an unknown name)" x)
+
+let endswith suffix x =
+  let suffix' = String.length suffix and x' = String.length x in
+  x' >= suffix' && (String.sub x (x' - suffix') suffix' = suffix)
+
 open Fe_debug
 
 let handle_fd_sock fd_sock state =
   try
     let (newfd,buffer) = Fecomms.receive_named_fd fd_sock in
-    if Unixext.int_of_file_descr newfd = -1 then begin
+    if Fecomms.int_of_file_descr newfd = -1 then begin
       debug "Failed to receive an fd associated with the message '%s'" buffer;
       failwith "Didn't get an fd"
     end;
@@ -33,8 +93,8 @@ let handle_fd_sock fd_sock state =
     let fd = begin 
       match dest_fd with 
 	| Some d -> 
-	    debug "Received fd named: %s - duping to %d (from %d)" buffer d (Unixext.int_of_file_descr newfd);
-	    let d = Unixext.file_descr_of_int d in
+	    debug "Received fd named: %s - duping to %d (from %d)" buffer d (Fecomms.int_of_file_descr newfd);
+	    let d = Fecomms.file_descr_of_int d in
 	    begin
 	      if d = newfd
 	      then ()
@@ -45,7 +105,7 @@ let handle_fd_sock fd_sock state =
 	    end;
 	    d
 	| None -> 
-	    debug "Received fd named: %s (%d)" buffer (Unixext.int_of_file_descr newfd);
+	    debug "Received fd named: %s (%d)" buffer (Fecomms.int_of_file_descr newfd);
 	    newfd
     end in
     {state with ids_received = (buffer,fd) :: state.ids_received}
@@ -114,16 +174,16 @@ let run state comms_sock fd_sock fd_sock_path =
     Unix.close fd_sock;
     (match state.fd_sock2 with Some x -> Unix.close x | None -> ());
 
-    Unixext.unlink_safe fd_sock_path;
+    Fecomms.unlink_safe fd_sock_path;
     
     (* Finally, replace placeholder uuids in the commandline arguments
        to be the string representation of the fd (where we don't care what
        fd it ends up being) *)
     let args = List.map (fun arg ->
       try 
-	let (id_received,fd) = List.find (fun (id_received,fd) -> String.endswith id_received arg) state.ids_received in
+	let (id_received,fd) = List.find (fun (id_received,fd) -> endswith id_received arg) state.ids_received in
 	let stem = String.sub arg 0 (String.length arg - String.length id_received) in
-	stem ^ (string_of_int (Unixext.int_of_file_descr fd));
+	stem ^ (string_of_int (Fecomms.int_of_file_descr fd));
       with _ -> arg) state.cmdargs in
 
     debug "Args after replacement = [%s]" (String.concat ";" args);    
@@ -132,7 +192,7 @@ let run state comms_sock fd_sock fd_sock_path =
     let fds = List.map snd state.ids_received in
     
     debug "I've received the following fds: [%s]\n" 
-      (String.concat ";" (List.map (fun fd -> string_of_int (Unixext.int_of_file_descr fd)) fds));
+      (String.concat ";" (List.map (fun fd -> string_of_int (Fecomms.int_of_file_descr fd)) fds));
 
     let in_childlogging = ref None in
     let out_childlogging = ref None in
@@ -149,11 +209,14 @@ let run state comms_sock fd_sock fd_sock_path =
 		(* child *)
 
         (* Make the child's stdout go into the pipe *)
-		Opt.iter (fun out_fd -> Unix.dup2 out_fd Unix.stdout) !out_childlogging;
+		(match !out_childlogging with
+		| Some out_fd -> Unix.dup2 out_fd Unix.stdout
+		| None -> ());
 
+(* Surely we only have the right fds by construction?
       (* Now let's close everything except those fds mentioned in the ids_received list *)
       Unixext.close_all_fds_except ([Unix.stdin; Unix.stdout; Unix.stderr] @ fds);
-      
+*)
       (* Distance ourselves from our parent process: *)
       if Unix.setsid () == -1 then failwith "Unix.setsid failed";	  
 
@@ -165,7 +228,7 @@ let run state comms_sock fd_sock fd_sock_path =
       List.iter (fun fd -> Unix.close fd) fds;
 
       (* Close the end of the pipe that's only supposed to be written to by the child process. *)
-	  Opt.iter Unix.close !out_childlogging;
+	  (match !out_childlogging with Some x -> Unix.close x | None -> ());
 
       let log_failure reason code = 
 		(* The commandline might be too long to clip it *)
@@ -176,17 +239,17 @@ let run state comms_sock fd_sock fd_sock_path =
 			Syslog.syslog Fe_debug.syslog `LOG_ERR (Printf.sprintf "%d (%s) %s %d" result cmdline' reason code) in
 
 	  let status = ref (Unix.WEXITED (-1)) in
-	  finally
+	  Fecomms.finally
 		  (fun () ->
-			  Opt.iter
-				  (fun in_fd ->
+			  match !in_childlogging with
+			  | Some in_fd ->
 					  let key = (match state.syslog_stdout.key with None -> Filename.basename name | Some key -> key) in
 					  (* Read from the child's stdout and write each one to syslog *)
-					  Unixext.lines_iter
+					  lines_iter
 						  (fun line ->
 							  Syslog.syslog ~fac:`LOG_DAEMON `LOG_INFO (Printf.sprintf "%s[%d]: %s" key result line)
 						  ) (Unix.in_channel_of_descr in_fd)
-				  ) !in_childlogging
+			  | None -> ()
 		  ) (fun () -> status := snd (Unix.waitpid [] result));
 
       let pr = match !status with
@@ -195,10 +258,10 @@ let run state comms_sock fd_sock fd_sock_path =
 			if n <> 0 then log_failure "exitted with code" n;
 			  Fe.WEXITED n
 		| Unix.WSIGNALED n -> 
-			  log_failure (Printf.sprintf "exitted with signal: %s" (Unixext.string_of_signal n));
+			  log_failure (Printf.sprintf "exitted with signal: %s" (string_of_signal n));
 			  Fe.WSIGNALED n 
 		| Unix.WSTOPPED n -> 
-			  log_failure (Printf.sprintf "stopped with signal: %s" (Unixext.string_of_signal n));
+			  log_failure (Printf.sprintf "stopped with signal: %s" (string_of_signal n));
 			  Fe.WSTOPPED n
       in
       let result = Fe.Finished (pr) in
@@ -218,11 +281,11 @@ let run state comms_sock fd_sock fd_sock_path =
 	debug "Cancelling";
 	Unix.close comms_sock;
 	Unix.close fd_sock;
-	Unixext.unlink_safe fd_sock_path;
+	Fecomms.unlink_safe fd_sock_path;
 	exit 0;
     | e -> 
 	debug "Caught unexpected exception: %s" (Printexc.to_string e);
 	write_log ();
-	Unixext.unlink_safe fd_sock_path;
+	Fecomms.unlink_safe fd_sock_path;
 	exit 1
 	  

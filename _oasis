@@ -26,3 +26,11 @@ Executable forexecd
   Custom:             true
   Install:            false
   BuildDepends:       forkexec, uuidm, syslog
+
+Executable fe_test
+  CompiledObject:     best
+  Path:               test
+  MainIs:             fe_test.ml
+  Custom:             true
+  Install:            false
+  BuildDepends:       forkexec, uuidm, syslog

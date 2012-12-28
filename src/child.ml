@@ -38,6 +38,8 @@ let lines_fold f start input =
         done;
         !accumulator
 
+let lines_iter f = lines_fold (fun () line -> ignore(f line)) ()
+
 (** open a file, and make sure the close is always done *)
 let with_input_channel file f =
         let input = open_in file in
@@ -79,6 +81,17 @@ let string_of_signal x =
 let endswith suffix x =
   let suffix' = String.length suffix and x' = String.length x in
   x' >= suffix' && (String.sub x (x' - suffix') suffix' = suffix)
+
+(** has_substr str sub returns true if sub is a substring of str. Simple, naive, slow. *)
+let has_substr str sub =
+  if String.length sub > String.length str then false else
+    begin
+      let result=ref false in
+      for start = 0 to (String.length str) - (String.length sub) do
+        if String.sub str start (String.length sub) = sub then result := true
+      done;
+      !result
+    end
 
 open Fe_debug
 
@@ -235,7 +248,7 @@ let run state comms_sock fd_sock fd_sock_path =
 		let cmdline = String.concat " " args in
 		let limit = 80 - 3 in
 		let cmdline' = if String.length cmdline > limit then String.sub cmdline 0 limit ^ "..." else cmdline in
-		if code=0 && name = "/opt/xensource/sm/ISOSR" && (String.has_substr cmdline' "sr_scan") then () else
+		if code=0 && name = "/opt/xensource/sm/ISOSR" && (has_substr cmdline' "sr_scan") then () else
 			Syslog.syslog Fe_debug.syslog `LOG_ERR (Printf.sprintf "%d (%s) %s %d" result cmdline' reason code) in
 
 	  let status = ref (Unix.WEXITED (-1)) in
@@ -247,7 +260,7 @@ let run state comms_sock fd_sock fd_sock_path =
 					  (* Read from the child's stdout and write each one to syslog *)
 					  lines_iter
 						  (fun line ->
-							  Syslog.syslog ~fac:`LOG_DAEMON `LOG_INFO (Printf.sprintf "%s[%d]: %s" key result line)
+							  Syslog.syslog Fe_debug.syslog ~fac:`LOG_DAEMON `LOG_INFO (Printf.sprintf "%s[%d]: %s" key result line)
 						  ) (Unix.in_channel_of_descr in_fd)
 			  | None -> ()
 		  ) (fun () -> status := snd (Unix.waitpid [] result));

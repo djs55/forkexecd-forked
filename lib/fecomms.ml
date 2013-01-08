@@ -1,8 +1,5 @@
 open Fe
 
-let int_of_file_descr (x: Unix.file_descr) : int = Obj.magic x
-let file_descr_of_int (x: int) : Unix.file_descr = Obj.magic x
-
 let finally f g =
   try
     let x = f () in

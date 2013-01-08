@@ -82,16 +82,14 @@ let endswith suffix x =
   let suffix' = String.length suffix and x' = String.length x in
   x' >= suffix' && (String.sub x (x' - suffix') suffix' = suffix)
 
-(** has_substr str sub returns true if sub is a substring of str. Simple, naive, slow. *)
+(** has_substr str sub returns true if sub is a substring of str. *)
 let has_substr str sub =
-  if String.length sub > String.length str then false else
-    begin
-      let result=ref false in
-      for start = 0 to (String.length str) - (String.length sub) do
-        if String.sub str start (String.length sub) = sub then result := true
-      done;
-      !result
-    end
+  let r = Re_str.regexp_string sub in (* exactly matches [sub] *)
+  try
+    let (_: int) = Re_str.search_forward r str 0 in
+    true
+  with Not_found ->
+    false
 
 open Fe_debug
 
